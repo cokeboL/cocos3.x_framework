@@ -1,4 +1,4 @@
-local langCfg = {}
+local LangCfg = {}
 
 
-return langCfg
+return LangCfg

@@ -4,11 +4,11 @@ local language =
 }
 
 
-local langCfg = require("Cfg/langCfg")
+local LangCfg = require("Cfg/LangCfg")
 
 function language.get(id)
-	if langCfg[id] then	
-		return langCfg[id][language.currLang]
+	if LangCfg[id] then	
+		return LangCfg[id][language.currLang]
 	end
 
 	return ""
