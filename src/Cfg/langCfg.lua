@@ -1,0 +1,4 @@
+local langCfg = {}
+
+
+return langCfg

@@ -1,0 +1,5 @@
+class LuaModule
+{
+	static void registerLuaHandler(int luaFunc);
+	
+};
