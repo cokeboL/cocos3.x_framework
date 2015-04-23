@@ -1,5 +1,5 @@
 local ResMgr = class("ResMgr", function()
-	return cc.Node:create()
+	return cc.Layer:create()
 end)
 
 
@@ -13,6 +13,23 @@ local strSub = string.sub
 local strFind = string.find
 local strByte = string.byte
 local strChar = string.char
+
+local MASK_ZORDER = 1000000
+function ResMgr:ctor()
+	self:registerScriptHandler(function(event)
+        if event == "enter" then
+        	self:load()
+        elseif event == "exit" then
+        	self:clear()
+        end
+    end)
+
+    self:setTouchEnabled(true)
+    self:setLocalZOrder(MASK_ZORDER)
+    self:registerScriptTouchHandler(function (event, x, y)
+        return true
+    end)
+end
 
 -- ** ****************************************************************
 -- **  modify this config and functions
@@ -94,17 +111,6 @@ function ResMgr:getSpineTextureFiles(file, flag)
 	return textures
 end
 -- ****************************************************************
-
-function ResMgr:ctor()
-	self:registerScriptHandler(function(event)
-        if event == "enter" then
-        	self:load()
-        elseif event == "exit" then
-        	self:clear()
-        end
-    end)
-end
-
 
 --[[
 function addImages
@@ -369,6 +375,7 @@ function ResMgr:load()
 		needLoad = needLoad - 1
 		if needLoad == 0 and self.listener then
 			self.listener()
+			self:setTouchEnabled(false)
 		end
 	end
 	self:loadImages(onloaded)

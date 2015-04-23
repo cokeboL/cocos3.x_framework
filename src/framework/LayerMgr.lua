@@ -13,12 +13,4 @@ function LayerMgr:ctor()
 
 end
 
-function LayerMgr:ctor()
-
-end
-
-function LayerMgr:ctor()
-
-end
-
 return LayerMgr
