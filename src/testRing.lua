@@ -3,7 +3,7 @@ local testRing = {}
 function testRing:createRing()
 	local widget = ui.binWidget("res/Ring_1.csb")
 	--local widget = ccs.GUIReader:getInstance():widgetFromBinaryFile("res/Ring_1.csb")
-
+	widget:setTouchEnabled(false)
 	local scrollLayer = widget:getChildByName("Ring")
 
 	self.item_1 = scrollLayer:getChildByName("item_1")
@@ -199,7 +199,7 @@ function testRing:createRing()
 				self.resMgr:removeFromParent()
 				self.resMgr = nil
 			end
-			---[[
+			--[[
 			self:testResMgr()
 			--]]
         elseif eventType == ccui.TouchEventType.canceled then
@@ -208,7 +208,7 @@ function testRing:createRing()
 				self.resMgr:removeFromParent()
 				self.resMgr = nil
 			end
-			---[[
+			--[[
 			self:testResMgr()
 			--]]
         end
@@ -219,23 +219,123 @@ end
 
 
 function testRing:run()
+	self:scene1()
+end
+
+function testRing:scene1()
+	self.ring = nil
+	self.spineBoy = nil
+	print("----------------- scene 1")
 	local scene = cc.Scene:create()
 	self.layer = cc.Layer:create()
 	scene:addChild(self.layer)
+	self.layer:setTouchEnabled(true)
+	self.layer:registerScriptTouchHandler(function (event, x, y)
+		print(".............zzzz ", event, x, y)
+        if event == "ended" then 
+        	self:scene2()
+        end
+        return true
+    end)
 
 	self:testResMgr()
 
-	cc.Director:getInstance():runWithScene(scene)
+	director.runScene(scene)
 end
 
+function testRing:scene2()
+	self.ring = nil
+	self.spineBoy = nil
+	print("----------------- scene 2")
+	local scene = cc.Scene:create()
+	self.layer = cc.Layer:create()
+	scene:addChild(self.layer)
+	self.layer:setTouchEnabled(true)
+	self.layer:registerScriptTouchHandler(function (event, x, y)
+        if event == "ended" then 
+        	self:scene1()
+        end
+        print(".............zzzz ", event, x, y)
+        return true
+    end)
+
+	self:testResMgr2()
+
+	director.runScene(scene)
+end
+
+function testRing:createSpineBoy()
+	local skeletonNode = sp.SkeletonAnimation:create("spine/spineboy.json", "spine/spineboy.atlas", 0.5)
+	skeletonNode:setScale(0.5)
+
+	skeletonNode:registerSpineEventHandler(function (event)
+	  print(string.format("[spine] %d start: %s", 
+	                          event.trackIndex,
+	                          event.animation))
+	end, sp.EventType.ANIMATION_START)
+
+	skeletonNode:registerSpineEventHandler(function (event)
+	  print(string.format("[spine] %d end:", 
+	                            event.trackIndex))
+	end, sp.EventType.ANIMATION_END)
+
+	skeletonNode:registerSpineEventHandler(function (event)
+	  print(string.format("[spine] %d complete: %d", 
+	                          event.trackIndex, 
+	                          event.loopCount))
+	end, sp.EventType.ANIMATION_COMPLETE)
+
+	skeletonNode:registerSpineEventHandler(function (event)
+	  print(string.format("[spine] %d event: %s, %d, %f, %s", 
+	                          event.trackIndex,
+	                          event.eventData.name,
+	                          event.eventData.intValue,
+	                          event.eventData.floatValue,
+	                          event.eventData.stringValue)) 
+	end, sp.EventType.ANIMATION_EVENT)
+
+	skeletonNode:setMix("walk", "jump", 0.2)
+	skeletonNode:setMix("jump", "run", 0.2)
+	skeletonNode:setAnimation(0, "walk", true)
+
+	skeletonNode:addAnimation(0, "jump", false, 3)
+	skeletonNode:addAnimation(0, "run", true)
+
+	local windowSize = cc.Director:getInstance():getWinSize()
+	skeletonNode:setPosition(cc.p(windowSize.width / 2, 20))
+	return skeletonNode
+end
 function testRing:testResMgr()
+	if self.spineBoy then
+		self.spineBoy:removeFromParent()
+		self.spineBoy = nil
+	end
 	self.resMgr = ResMgr.new()
 	self.resMgr:addImages({{file="res/fixed-ortho-test2.png",flag=true}})
+	self.resMgr:addSpineImages({{file="res/spine/spineboy.atlas",flag=true}, {file="res/spine/goblins-ffd.atlas",flag=false}})
 	self.resMgr:addPlist({{file="res/ui.plist",flag=true}, {file="res/ui.plist",flag=true}})
-	self.resMgr:addArmatures({{model="BaiTu",flag=true}, {model="dabaitu",flag=true}})
+	self.resMgr:addCCSArmatures({{model="BaiTu",flag=true}, {model="dabaitu",flag=false}})
 	self.resMgr:setListener(function()
-		local ring = self:createRing()
-		self.layer:addChild(ring)
+		self.spineBoy = self:createSpineBoy()
+		self.spineBoy:setPosition(director.center)
+		self.layer:addChild(self.spineBoy)
+	end)
+	self.layer:addChild(self.resMgr)
+end
+
+function testRing:testResMgr2()
+	if self.ring then
+		self.ring:removeFromParent()
+	end
+	self.resMgr = ResMgr.new()
+	self.resMgr:addImages({{file="res/fixed-ortho-test2.png",flag=true}})
+	self.resMgr:addSpineImages({{file="res/spine/spineboy.atlas",flag=true}, {file="res/spine/goblins-ffd.atlas",flag=false}})
+	self.resMgr:addPlist({{file="res/ui.plist",flag=true}, {file="res/ui.plist",flag=true}})
+	self.resMgr:addCCSArmatures({{model="BaiTu",flag=true}, {model="dabaitu",flag=false}})
+	self.resMgr:setListener(function()
+		self.ring = self:createRing()
+		--self.ring:setPosition(director.center)
+		self.layer:addChild(self.ring)
 	end)
 	self.layer:addChild(self.resMgr)
 end

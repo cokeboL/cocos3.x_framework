@@ -11,6 +11,8 @@ local armatureDataMgr = ccs.ArmatureDataManager:getInstance()
 local strLen = string.len
 local strSub = string.sub
 local strFind = string.find
+local strByte = string.byte
+local strChar = string.char
 
 -- ** ****************************************************************
 -- **  modify this config and functions
@@ -44,7 +46,7 @@ function ResMgr:getTextureFile(pfile)
 	return tfile
 end
 
-function ResMgr:getArmatureFile(model)
+function ResMgr:getCCSArmatureFile(model)
 	local file
 	for _, v in ipairs(armatureTailTypes) do
 		file = fileUtils:fullPathForFilename(resRoot .. model .. "/" .. model .. v)
@@ -54,6 +56,42 @@ function ResMgr:getArmatureFile(model)
 	end
 
 	return file
+end
+
+function ResMgr:getSpineTextureFiles(file, flag)
+	local item
+	local textures = {}
+	local i = strLen(file)
+	while strChar(strByte(file, i)) ~= '/' do
+		i = i-1
+		if i == 1 then break end
+	end
+	local dir = strSub(file, 1, i)
+	local function _xx(s)
+		local idx = strFind(s, ".png")
+		
+		if not idx then return end
+		
+		local subS = strSub(s, 1, idx+3)
+
+		local j = -1
+		while strChar(strByte(subS, j)) ~= '\n' do
+			j = j-1
+		end
+		subS = strSub(subS, j+1)
+		
+		item = {}
+		item.file = dir .. subS
+		item.flag = flag
+		textures[#textures+1] = item
+		
+		_xx(strSub(s, idx+4))
+	end
+	
+	local str = fileUtils:getStringFromFile(file)
+	_xx(str)
+	
+	return textures
 end
 -- ****************************************************************
 
@@ -71,17 +109,17 @@ end
 --[[
 function addImages
 arg: 
-armatures = 
+images = 
 {
 	[1] = 
 	{
-		file="res/ui.plist",
+		file="res/xxx1.png",
 		flag=true/false -- true: clear when exit, false/nil: not clear when exit
 	},
 
 	[2] = 
 	{
-		model="Xiaolongnv",  -- res/Xiaolongnv/Xiaolongnv.csb"
+		model="res/xxx2.pvr.ccz",
 		flag=true/false -- true: clear when exit, false/nil: not clear when exit
 	},
 	...
@@ -94,9 +132,7 @@ example:
 function ResMgr:addImages(images)
 	self.images = self.images or {}
 
-	if type(images) == 'string' then
-		self.images[#self.images+1] = images
-	elseif type(images) == 'table' then
+	if type(images) == 'table' then
 		for _, v in ipairs(images) do
 			self.images[#self.images+1] = v
 		end
@@ -106,7 +142,7 @@ end
 --[[
 function addPlist
 arg: 
-armatures = 
+plists = 
 {
 	[1] = 
 	{
@@ -116,7 +152,7 @@ armatures =
 
 	[2] = 
 	{
-		model="Xiaolongnv",  -- res/Xiaolongnv/Xiaolongnv.csb"
+		model="res/ui2.plist",
 		flag=true/false -- true: clear when exit, false/nil: not clear when exit
 	},
 	...
@@ -129,9 +165,7 @@ example:
 function ResMgr:addPlist(plists)
 	self.plists = self.plists or {}
 
-	if type(plists) == 'string' then
-		self.plists[#self.plists+1] = plists
-	elseif type(plists) == 'table' then
+	if type(plists) == 'table' then
 		for _, v in ipairs(plists) do
 			self.plists[#self.plists+1] = v
 		end
@@ -139,7 +173,7 @@ function ResMgr:addPlist(plists)
 end
 
 --[[
-function addArmatures
+function addCCSArmatures
 arg: 
 armatures = 
 {
@@ -158,21 +192,55 @@ armatures =
 }
 example: 
 	local resMgr = ResMgr.new()
-	resMgr:addArmatures({{model="BaiTu",flag=true}, {model="dabaitu",flag=false}})
+	resMgr:addCCSArmatures({{model="BaiTu",flag=true}, {model="dabaitu",flag=false}})
 	layer:addChild(resMgr)
 ]]
-function ResMgr:addArmatures(armatures)
+function ResMgr:addCCSArmatures(armatures)
 	self.armatures = self.armatures or {}
 
-	if type(armatures) == 'string' then
-		self.armatures[#self.armatures+1] = armatures
-	elseif type(armatures) == 'table' then
+	if type(armatures) == 'table' then
 		for _, v in ipairs(armatures) do
 			self.armatures[#self.armatures+1] = v
 		end
 	end
 end
 
+--[[
+function addSpineImages
+arg: 
+spImages = 
+{
+	[1] = 
+	{
+		file="res/spine/spineboy.atlas",
+		flag=true/false -- true: clear when exit, false/nil: not clear when exit
+	},
+
+	[2] = 
+	{
+		model="res/spine/spineboy2.atlas",
+		flag=true/false -- true: clear when exit, false/nil: not clear when exit
+	},
+	...
+}
+example: 
+	local resMgr = ResMgr.new()
+	resMgr:addImages({{file="res/spine/spineboy.atlas",flag=true}, {file="res/spine/spineboy2.atlas",flag=false}})
+	layer:addChild(resMgr)
+]]
+function ResMgr:addSpineImages(atlasFiles)
+	self.spineImages = self.spineImages or {}
+
+	if type(atlasFiles) == 'table' then
+		local textures
+		for _, v in ipairs(atlasFiles) do
+			textures = self:getSpineTextureFiles(v.file, v.flag)
+			for _, tfile in ipairs(textures) do
+				self.spineImages[#self.spineImages+1] = tfile
+			end
+		end
+	end
+end
 
 function ResMgr:setListener(listener)
 	self.listener = listener
@@ -195,10 +263,8 @@ function ResMgr:loadImages(cb)
 
 	for _, item in ipairs(self.images) do
 		textureCache:addImageAsync(item.file, loadCount)
-		print("----- add image: ", item.file)
 	end
 end
-
 
 function ResMgr:loadPlists(cb)
 	if (not self.plists) or (type(self.plists) ~= 'table') or (#self.plists == 0) then
@@ -215,7 +281,6 @@ function ResMgr:loadPlists(cb)
 		if strLen(item.tfile) > 0 then
 			textureCache:addImageAsync(item.tfile, function(texture)
 				frameCache:addSpriteFrames(pfile, texture)
-				print("----- add plist: ", pfile, item.tfile)
 				sum = sum - 1
 				if sum == 0 then
 					cb()
@@ -230,17 +295,17 @@ function ResMgr:loadPlists(cb)
 	end
 end
 
-function ResMgr:addArmaturePlist(model)
+function ResMgr:addCCSArmaturePlist(model, flag)
 	for i=0, 10 do
 		local pfile = fileUtils:fullPathForFilename(resRoot .. model .. "/" .. model .. i .. plistTail)
 		if strLen(pfile) > 0 then
 			local plistItem = {}
 			plistItem.file = pfile
-			
+			plistItem.flag = flag
 			local tfile = self:getTextureFile(pfile)
 			if strLen(tfile) > 0 then
 				plistItem.tfile = tfile
-				self.armaturePlists[#self.armaturePlists+1] = plistItem
+				self.ccsArmaturePlists[#self.ccsArmaturePlists+1] = plistItem
 			end
 		else
 			break
@@ -250,35 +315,52 @@ end
 
 
 
-function ResMgr:loadArmatures(cb)
-	if (not self.armatures) or (type(self.armatures) ~= 'table') or (#self.armatures == 0) then
+function ResMgr:loadCCSArmatures(cb)
+	if (not self.ccsArmatures) or (type(self.ccsArmatures) ~= 'table') or (#self.ccsArmatures == 0) then
 		cb()
 		return
 	end
 
-	self.armaturePlists = self.armaturePlists or {}
+	self.ccsArmaturePlists = self.ccsArmaturePlists or {}
 
-	local sum = #self.armatures
+	local sum = #self.ccsArmatures
 
 	local function loadCount()
 		sum = sum - 1
 		if sum == 0 then
 			cb()
-			for _, v in ipairs(self.armaturePlists) do
-
-			end
 		end
 	end
 	
 	
-	for _, item in ipairs(self.armatures) do
-		item.file = self:getArmatureFile(item.model)
+	for _, item in ipairs(self.ccsArmatures) do
+		item.file = self:getCCSArmatureFile(item.model)
 		armatureDataMgr:addArmatureFileInfoAsync(item.file, loadCount)
 
-		self:addArmaturePlist(item.model)
-		print("----- add armature: ", item.file)
+		self:addCCSArmaturePlist(item.model, item.flag)
 	end
 	
+end
+
+
+function ResMgr:loadSpineImages(cb)
+	if (not self.spineImages) or (type(self.spineImages) ~= 'table') or (#self.spineImages == 0) then
+		cb()
+		return
+	end
+
+	local sum = #self.spineImages
+
+	local function loadCount(texture)
+		sum = sum - 1
+		if sum == 0 then
+			cb()
+		end
+	end
+
+	for _, item in ipairs(self.spineImages) do
+		textureCache:addImageAsync(item.file, loadCount)
+	end
 end
 
 function ResMgr:load()
@@ -290,16 +372,16 @@ function ResMgr:load()
 		end
 	end
 	self:loadImages(onloaded)
+	self:loadSpineImages(onloaded)
 	self:loadPlists(onloaded)
-	self:loadArmatures(onloaded)
+	self:loadCCSArmatures(onloaded)
 end
 
 function ResMgr:clearArmatures()
-	if self.armatures then
-		for _, item in ipairs(self.armatures) do
+	if self.ccsArmatures then
+		for _, item in ipairs(self.ccsArmatures) do
 			if item.flag then
 				armatureDataMgr:removeArmatureFileInfo(item.file)
-				print("----- remove armature: ", item.file)
 			end
 		end
 	end
@@ -308,19 +390,21 @@ end
 function ResMgr:clearPlists()
 	if self.plists then
 		for _, item in ipairs(self.plists) do
-			frameCache:removeSpriteFramesFromFile(item.file)
-			if item.tfile then
-				textureCache:removeTextureForKey(item.tfile)
-				print("----- remove plist: ", item.file, item.tfile)
+			if item.flag then
+				frameCache:removeSpriteFramesFromFile(item.file)
+				if item.tfile then
+					textureCache:removeTextureForKey(item.tfile)
+				end
 			end
 		end
 	end
-	if self.armaturePlists then
-		for _, item in ipairs(self.armaturePlists) do
-			frameCache:removeSpriteFramesFromFile(item.file)
-			if item.tfile then
-				textureCache:removeTextureForKey(item.tfile)
-				print("----- remove armaturePlists: ", item.file, item.tfile)
+	if self.ccsArmaturePlists then
+		for _, item in ipairs(self.ccsArmaturePlists) do
+			if item.flag then
+				frameCache:removeSpriteFramesFromFile(item.file)
+				if item.tfile then
+					textureCache:removeTextureForKey(item.tfile)
+				end
 			end
 		end
 	end
@@ -331,7 +415,17 @@ function ResMgr:clearImages()
 		for _, item in ipairs(self.images) do
 			if item.flag then
 				textureCache:removeTextureForKey(item.file)
-				print("----- remove image: ", item.file)
+			end
+		end
+	end
+end
+
+function ResMgr:clearSpineImages()
+	if self.spineImages then
+		for _, item in ipairs(self.spineImages) do
+			if item.flag then
+				textureCache:removeTextureForKey(item.file)
+				
 			end
 		end
 	end
@@ -341,6 +435,7 @@ function ResMgr:clear()
 	self:clearArmatures()
 	self:clearPlists()
 	self:clearImages()
+	self:clearSpineImages()
 end
 
 return ResMgr
