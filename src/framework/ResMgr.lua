@@ -12,6 +12,12 @@ local strLen = string.len
 local strSub = string.sub
 local strFind = string.find
 
+-- ** ****************************************************************
+-- **  modify this config and functions
+-- ** ****************************************************************
+local resRoot = "res/"
+local plistTail = ".plist"
+
 local textureTailTypes = 
 {
 	"png",
@@ -19,14 +25,37 @@ local textureTailTypes =
 	"jpg",
 }
 
-local resRoot = "res/"
-local plistTail = ".plist"
-
 local armatureTailTypes =
 {
 	".ExportJson",
 	".csb",
 }
+
+function ResMgr:getTextureFile(pfile)
+	local tfile
+	for _, v in ipairs(textureTailTypes) do
+		tfile = strSub(pfile, 1, strFind(pfile, ".plist")) .. v
+		tfile = fileUtils:fullPathForFilename(tfile)
+		if strLen(tfile) > 0 then
+			break
+		end
+	end
+
+	return tfile
+end
+
+function ResMgr:getArmatureFile(model)
+	local file
+	for _, v in ipairs(armatureTailTypes) do
+		file = fileUtils:fullPathForFilename(resRoot .. model .. "/" .. model .. v)
+		if strLen(file) > 0 then
+			break
+		end
+	end
+
+	return file
+end
+-- ****************************************************************
 
 function ResMgr:ctor()
 	self:registerScriptHandler(function(event)
@@ -38,6 +67,30 @@ function ResMgr:ctor()
     end)
 end
 
+
+--[[
+function addImages
+arg: 
+armatures = 
+{
+	[1] = 
+	{
+		file="res/ui.plist",
+		flag=true/false -- true: clear when exit, false/nil: not clear when exit
+	},
+
+	[2] = 
+	{
+		model="Xiaolongnv",  -- res/Xiaolongnv/Xiaolongnv.csb"
+		flag=true/false -- true: clear when exit, false/nil: not clear when exit
+	},
+	...
+}
+example: 
+	local resMgr = ResMgr.new()
+	resMgr:addImages({{file="res/ui.png",flag=true}, {file="res/ui2.png",flag=false}})
+	layer:addChild(resMgr)
+]]
 function ResMgr:addImages(images)
 	self.images = self.images or {}
 
@@ -50,6 +103,29 @@ function ResMgr:addImages(images)
 	end
 end
 
+--[[
+function addPlist
+arg: 
+armatures = 
+{
+	[1] = 
+	{
+		file="res/ui.plist",
+		flag=true/false -- true: clear when exit, false/nil: not clear when exit
+	},
+
+	[2] = 
+	{
+		model="Xiaolongnv",  -- res/Xiaolongnv/Xiaolongnv.csb"
+		flag=true/false -- true: clear when exit, false/nil: not clear when exit
+	},
+	...
+}
+example: 
+	local resMgr = ResMgr.new()
+	resMgr:addPlist({{file="res/ui.plist",flag=true}, {file="res/ui.plist",flag=false}})
+	layer:addChild(resMgr)
+]]
 function ResMgr:addPlist(plists)
 	self.plists = self.plists or {}
 
@@ -80,6 +156,10 @@ armatures =
 	},
 	...
 }
+example: 
+	local resMgr = ResMgr.new()
+	resMgr:addArmatures({{model="BaiTu",flag=true}, {model="dabaitu",flag=false}})
+	layer:addChild(resMgr)
 ]]
 function ResMgr:addArmatures(armatures)
 	self.armatures = self.armatures or {}
@@ -119,18 +199,6 @@ function ResMgr:loadImages(cb)
 	end
 end
 
-function ResMgr:getTextureFile(pfile)
-	local tfile
-	for _, v in ipairs(textureTailTypes) do
-		tfile = strSub(pfile, 1, strFind(pfile, ".plist")) .. v
-		tfile = fileUtils:fullPathForFilename(tfile)
-		if strLen(tfile) > 0 then
-			break
-		end
-	end
-
-	return tfile
-end
 
 function ResMgr:loadPlists(cb)
 	if (not self.plists) or (type(self.plists) ~= 'table') or (#self.plists == 0) then
@@ -143,16 +211,6 @@ function ResMgr:loadPlists(cb)
 
 	for _, item in ipairs(self.plists) do
 		local pfile = item.file
-		--[[
-		for _, v in ipairs(textureTailTypes) do
-			tfile = strSub(pfile, 1, strFind(pfile, ".plist")) .. v
-			tfile = fileUtils:fullPathForFilename(tfile)
-			if strLen(tfile) > 0 then
-				item.tfile = tfile
-				break
-			end
-		end
-		--]]
 		item.tfile = self:getTextureFile(pfile)
 		if strLen(item.tfile) > 0 then
 			textureCache:addImageAsync(item.tfile, function(texture)
@@ -190,17 +248,7 @@ function ResMgr:addArmaturePlist(model)
 	end
 end
 
-function ResMgr:getArmatureFile(model)
-	local file
-	for _, v in ipairs(armatureTailTypes) do
-		file = fileUtils:fullPathForFilename(resRoot .. model .. "/" .. model .. v)
-		if strLen(file) > 0 then
-			break
-		end
-	end
 
-	return file
-end
 
 function ResMgr:loadArmatures(cb)
 	if (not self.armatures) or (type(self.armatures) ~= 'table') or (#self.armatures == 0) then
