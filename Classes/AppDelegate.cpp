@@ -2,9 +2,7 @@
 #include "AppDelegate.h"
 #include "CCLuaEngine.h"
 #include "audio/include/SimpleAudioEngine.h"
-#include "lua_assetsmanager_test_sample.h"
 #include "lua_module_register.h"
-#include "lua_test_bindings.h"
 #include "Net/NetMgr.h"
 
 using namespace CocosDenshion;
@@ -27,9 +25,8 @@ void AppDelegate::initGLContextAttrs()
     GLView::setGLContextAttrs(glContextAttrs);
 }
 
-extern int luaopen_BlurSprite(lua_State* L);
 extern int luaopen_Net(lua_State* L);
-//extern int luaopen_AStar(lua_State* tolua_S);
+
 bool AppDelegate::applicationDidFinishLaunching()
 {
     // register lua engine
@@ -39,27 +36,15 @@ bool AppDelegate::applicationDidFinishLaunching()
   
     glview->setDesignResolutionSize(960, 640, ResolutionPolicy::EXACT_FIT);
     LuaStack* stack = pEngine->getLuaStack();
-    stack->setXXTEAKeyAndSign("2dxLua", strlen("2dxLua"), "XXTEA", strlen("XXTEA"));
+    //stack->setXXTEAKeyAndSign("2dxLua", strlen("2dxLua"), "XXTEA", strlen("XXTEA"));
     
     lua_State* L = stack->getLuaState();
     
     lua_module_register(L);
-
-    lua_getglobal(L, "_G");
-    if (lua_istable(L,-1))//stack:...,_G,
-    {
-#if (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32 || CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID ||CC_TARGET_PLATFORM == CC_PLATFORM_IOS || CC_TARGET_PLATFORM == CC_PLATFORM_MAC)
-        register_assetsmanager_test_sample(L);
-#endif
-        register_test_binding(L);
-		luaopen_BlurSprite(L);
-		luaopen_Net(L);
-		//luaopen_AStar(L);
-    }
-    lua_pop(L, 1);
+	luaopen_Net(L);
 
 	Director::getInstance()->setNotificationNode(NetMgr::getInstance());
-	//NetMgr::getInstance()->onCreate();
+	Director::getInstance()->setDisplayStats(true);
 
     pEngine->executeScriptFile("src/main.lua");
 
@@ -73,7 +58,7 @@ void AppDelegate::applicationDidEnterBackground()
 
     SimpleAudioEngine::getInstance()->pauseBackgroundMusic();
 
-	//NetMgr::getInstance()->suspend();
+	NetMgr::getInstance()->suspend();
 }
 
 // this function will be called when the app is active again
@@ -83,5 +68,5 @@ void AppDelegate::applicationWillEnterForeground()
 
     SimpleAudioEngine::getInstance()->resumeBackgroundMusic();
 
-	//NetMgr::getInstance()->active();
+	NetMgr::getInstance()->active();
 }

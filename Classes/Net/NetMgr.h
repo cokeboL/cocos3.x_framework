@@ -11,11 +11,11 @@ USING_NS_CC;
 USING_NS_CC_EXT;
 using namespace cocos2d::network;
 
-#define NET_USING_MUTI_THREAD 1
 
 #if (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32)
 #define ccsleep Sleep
 #else
+#define NET_USING_MUTI_THREAD 1
 #define ccsleep usleep
 #endif
 
@@ -59,12 +59,21 @@ public:
 
 	void suspend()
 	{
+#if NET_USING_MUTI_THREAD
+		CCLOG("----------- NetMgr::suspend 111 --------\n");
 		m_netMutex.lock();
+		CCLOG("----------- NetMgr::suspend 222 --------\n");
+#endif
 	}
 
 	void active()
 	{
+#if NET_USING_MUTI_THREAD
+		CCLOG("----------- NetMgr::active 111 --------\n");
 		m_netMutex.unlock();
+		CCLOG("----------- NetMgr::active 222 --------\n");
+#endif
+
 	}
 public:
 	//virtual void visit();

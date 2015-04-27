@@ -96,6 +96,8 @@ end
 
 function MainUILayer:showUI()
 	print("---- MainUILayer:showUI()")
+	--local widget = ccs.GUIReader:getInstance():widgetFromBinaryFile("NewUi_1.csb")
+	--self:addChild(widget)
 end
 
 return MainUILayer

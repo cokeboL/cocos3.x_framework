@@ -29,6 +29,7 @@ function ResMgr:ctor()
     self:setTouchEnabled(true)
     self:setLocalZOrder(MASK_ZORDER)
     self:registerScriptTouchHandler(function (event, x, y)
+    	print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
         return true
     end)
 
@@ -485,7 +486,7 @@ function ResMgr:load()
 			needLoad = needLoad - 1
 			if needLoad == 0 and self.listener then
 				self.listener()
-				self:setTouchEnabled(false)
+				--self:setTouchEnabled(false)
 			end
 		end
 		self:loadImagesAsync(onloaded)
@@ -498,7 +499,7 @@ function ResMgr:load()
 		self:loadPlists()
 		self:loadCCSArmatures()
 		self.listener()
-		self:setTouchEnabled(false)
+		--self:setTouchEnabled(false)
 	end
 end
 

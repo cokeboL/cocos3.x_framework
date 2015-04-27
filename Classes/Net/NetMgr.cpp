@@ -244,11 +244,12 @@ void NetMgr::visit(Renderer *renderer, const Mat4& parentTransform, uint32_t par
 
 void NetMgr::updateMessage()
 {
+#if NET_USING_MUTI_THREAD
 	while(m_isRunning)
 	{
-#if NET_USING_MUTI_THREAD
 		m_netMutex.lock();
 #endif
+		CCLOG("----------- NetMgr::updateMessage --------\n");
 		if(this->m_nConnectStatus == EConnected)
 		{
 			
@@ -289,7 +290,7 @@ void NetMgr::updateMessage()
 		}
 #if NET_USING_MUTI_THREAD		
 		m_netMutex.unlock();
-#endif
 		ccsleep(40);
 	}
+#endif
 }
