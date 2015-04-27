@@ -1,6 +1,8 @@
 local ResMgr = class("ResMgr", function()
 	return cc.Layer:create()
 end)
+ResMgr.SyncLoad = false
+ResMgr.AsyncLoad = true
 
 
 local fileUtils = cc.FileUtils:getInstance()
@@ -18,7 +20,7 @@ local MASK_ZORDER = 1000000
 function ResMgr:ctor()
 	self:registerScriptHandler(function(event)
         if event == "enter" then
-        	self:load()
+        	--self:load()
         elseif event == "exit" then
         	self:clear()
         end
@@ -29,6 +31,8 @@ function ResMgr:ctor()
     self:registerScriptTouchHandler(function (event, x, y)
         return true
     end)
+
+    self._isAsyncLoad = true
 end
 
 -- ** ****************************************************************
@@ -112,6 +116,11 @@ function ResMgr:getSpineTextureFiles(file, flag)
 end
 -- ****************************************************************
 
+
+function ResMgr:setLoadType(loadType)
+	self._isAsyncLoad = loadType
+	print("................. ResMgr:setLoadType(loadType) ", loadType)
+end
 --[[
 function addImages
 arg: 
@@ -252,7 +261,7 @@ function ResMgr:setListener(listener)
 	self.listener = listener
 end
 
-function ResMgr:loadImages(cb)
+function ResMgr:loadImagesAsync(cb)
 	if (not self.images) or (type(self.images) ~= 'table') or (#self.images == 0) then
 		cb()
 		return
@@ -272,7 +281,7 @@ function ResMgr:loadImages(cb)
 	end
 end
 
-function ResMgr:loadPlists(cb)
+function ResMgr:loadPlistsAsync(cb)
 	if (not self.plists) or (type(self.plists) ~= 'table') or (#self.plists == 0) then
 		cb()
 		return
@@ -319,9 +328,7 @@ function ResMgr:addCCSArmaturePlist(model, flag)
 	end
 end
 
-
-
-function ResMgr:loadCCSArmatures(cb)
+function ResMgr:loadCCSArmaturesAsync(cb)
 	if (not self.ccsArmatures) or (type(self.ccsArmatures) ~= 'table') or (#self.ccsArmatures == 0) then
 		cb()
 		return
@@ -345,11 +352,9 @@ function ResMgr:loadCCSArmatures(cb)
 
 		self:addCCSArmaturePlist(item.model, item.flag)
 	end
-	
 end
 
-
-function ResMgr:loadSpineImages(cb)
+function ResMgr:loadSpineImagesAsync(cb)
 	if (not self.spineImages) or (type(self.spineImages) ~= 'table') or (#self.spineImages == 0) then
 		cb()
 		return
@@ -369,19 +374,53 @@ function ResMgr:loadSpineImages(cb)
 	end
 end
 
-function ResMgr:load()
-	local needLoad = 3
-	local function onloaded()
-		needLoad = needLoad - 1
-		if needLoad == 0 and self.listener then
-			self.listener()
-			self:setTouchEnabled(false)
+function ResMgr:loadImages()
+	if (not self.images) or (type(self.images) ~= 'table') or (#self.images == 0) then
+		return
+	end
+
+	for _, item in ipairs(self.images) do
+		textureCache:addImage(item.file)
+	end
+end
+
+function ResMgr:loadPlists(cb)
+	if (not self.plists) or (type(self.plists) ~= 'table') or (#self.plists == 0) then
+		return
+	end
+
+	for _, item in ipairs(self.plists) do
+		local pfile = item.file
+		item.tfile = self:getTextureFile(pfile)
+		if strLen(item.tfile) > 0 then
+			frameCache:addSpriteFrames(pfile)
 		end
 	end
-	self:loadImages(onloaded)
-	self:loadSpineImages(onloaded)
-	self:loadPlists(onloaded)
-	self:loadCCSArmatures(onloaded)
+end
+
+function ResMgr:loadCCSArmatures(cb)
+	if (not self.ccsArmatures) or (type(self.ccsArmatures) ~= 'table') or (#self.ccsArmatures == 0) then
+		return
+	end
+
+	self.ccsArmaturePlists = self.ccsArmaturePlists or {}
+
+	for _, item in ipairs(self.ccsArmatures) do
+		item.file = self:getCCSArmatureFile(item.model)
+		armatureDataMgr:addArmatureFileInfo(item.file)
+
+		self:addCCSArmaturePlist(item.model, item.flag)
+	end
+end
+
+function ResMgr:loadSpineImages(cb)
+	if (not self.spineImages) or (type(self.spineImages) ~= 'table') or (#self.spineImages == 0) then
+		return
+	end
+
+	for _, item in ipairs(self.spineImages) do
+		textureCache:addImage(item.file)
+	end
 end
 
 function ResMgr:clearArmatures()
@@ -435,6 +474,31 @@ function ResMgr:clearSpineImages()
 				
 			end
 		end
+	end
+end
+
+
+function ResMgr:load()
+	if self._isAsyncLoad then
+		local needLoad = 4
+		local function onloaded()
+			needLoad = needLoad - 1
+			if needLoad == 0 and self.listener then
+				self.listener()
+				self:setTouchEnabled(false)
+			end
+		end
+		self:loadImagesAsync(onloaded)
+		self:loadSpineImagesAsync(onloaded)
+		self:loadPlistsAsync(onloaded)
+		self:loadCCSArmaturesAsync(onloaded)
+	else
+		self:loadImages()
+		self:loadSpineImages()
+		self:loadPlists()
+		self:loadCCSArmatures()
+		self.listener()
+		self:setTouchEnabled(false)
 	end
 end
 

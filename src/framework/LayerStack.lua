@@ -90,7 +90,6 @@ function LayerStack:clear()
 	self.data = nil
 
 	self.currLayer = nil
-
 end
 
 return LayerStack

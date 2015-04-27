@@ -19,15 +19,6 @@ function cclog(...)
     print(...)
 end
 
-function director.runScene(scene)
-    local running = cc.Director:getInstance():getRunningScene()
-    if(not running)then
-        cc.Director:getInstance():runWithScene(scene)
-    else
-        cc.Director:getInstance():replaceScene(scene)
-    end
-end
-
 local function main()
     --require("app.MyApp"):create():run()
     --require("update"):run()
@@ -37,7 +28,7 @@ local function main()
     net:connect(net.gateIp, net.gatePort, function()
         print("xxxxxxxxxxxxxxxx")
     end)
-    require("testRing"):run()
+    require("Scene/Main/MainScene").new():run()
     --require("TestJoystick"):run()
 end
 
